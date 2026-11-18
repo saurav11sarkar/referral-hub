@@ -21,6 +21,11 @@ export class User {
   email: string;
 
   @Prop({
+    default:false
+  })
+  emailVerified!:boolean;
+
+  @Prop({
     required: [true, 'Password is required'],
     minlength: 6,
     select: false,
@@ -28,7 +33,7 @@ export class User {
   password: string;
 
   @Prop({
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin','superadmin'],
     default: 'user',
   })
   role: string;
