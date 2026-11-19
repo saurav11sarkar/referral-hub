@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument, Types } from 'mongoose';
 export type UserDocument = HydratedDocument<User>;
 import * as bcrypt from 'bcrypt';
 import config from '../../../config';
@@ -21,9 +21,9 @@ export class User {
   email: string;
 
   @Prop({
-    default:false
+    default: false,
   })
-  emailVerified!:boolean;
+  emailVerified?: boolean;
 
   @Prop({
     required: [true, 'Password is required'],
@@ -33,7 +33,7 @@ export class User {
   password: string;
 
   @Prop({
-    enum: ['user', 'admin','superadmin'],
+    enum: ['user', 'admin', 'superadmin'],
     default: 'user',
   })
   role: string;
@@ -43,12 +43,6 @@ export class User {
 
   @Prop()
   phoneNumber: string;
-
-  @Prop()
-  country: string;
-
-  @Prop()
-  city: string;
 
   @Prop()
   address: string;
@@ -72,10 +66,21 @@ export class User {
   verifiedForget: boolean;
 
   @Prop()
-  stripeAccountId: string;
+  referralCode?: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  referredBy?: Types.ObjectId;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.index(
+  { referralCode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { referralCode: { $type: 'string' } },
+  },
+);
 
 UserSchema.pre('save', async function () {
   if (!this.isModified('password')) return;

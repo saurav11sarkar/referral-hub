@@ -1,15 +1,30 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 
 export class CreateAuthDto {
   @ApiProperty({ example: 'Saurav Sarkar' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @IsNotEmpty()
   fullName!: string;
 
   @ApiProperty({ example: 'saurav@example.com' })
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty()
   email!: string;
+
+  @ApiPropertyOptional({ example: '+8801712345678' })
+  @ValidateIf((_dto, value) => value !== undefined)
+  @IsString()
+  phoneNumber?: string;
 
   @ApiProperty({ example: 'secret123' })
   @IsString()
@@ -44,7 +59,7 @@ export class VerifyEmailDto {
 
   @ApiProperty({ example: '123456' })
   @IsString()
-  @IsNotEmpty()
+  @Matches(/^[0-9]{6}$/, { message: 'OTP must be a 6-digit string' })
   otp!: string;
 }
 

@@ -1,8 +1,9 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { User, UserDocument } from '../user/entities/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, mongo, Types } from 'mongoose';
+import { randomBytes } from 'node:crypto';
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import * as jwt from '@nestjs/jwt';
@@ -16,13 +17,61 @@ export class AuthService {
     private readonly jwtService: jwt.JwtService,
   ) {}
 
-  async register(CreateAuthDto: CreateAuthDto) {
-    const user = await this.userModel.findOne({ email: CreateAuthDto.email });
+  async register(
+    { fullName, email, phoneNumber, password }: CreateAuthDto,
+    ref?: unknown,
+  ) {
+    const user = await this.userModel.findOne({ email });
     if (user) {
       throw new HttpException('User already exists', 400);
     }
-    const newUser = await this.userModel.create(CreateAuthDto);
-    return newUser;
+    await this.userModel.init();
+
+    let referredBy: Types.ObjectId | undefined;
+    if (ref !== undefined) {
+      const code = typeof ref === 'string' ? ref.trim().toUpperCase() : '';
+      if (!/^RH-[0-9A-F]{12}$/.test(code)) {
+        throw new BadRequestException('Invalid referral code');
+      }
+
+      const referrer = await this.userModel
+        .findOne({ referralCode: code })
+        .select('_id')
+        .lean();
+      if (!referrer) {
+        throw new BadRequestException('Invalid referral code');
+      }
+      referredBy = referrer._id;
+    }
+
+    const maxAttempts = 3;
+    for (let attempt = 1; ; attempt++) {
+      const referralCode = `RH-${randomBytes(6).toString('hex').toUpperCase()}`;
+
+      try {
+        const newUser = await this.userModel.create({
+          fullName,
+          email,
+          phoneNumber,
+          password,
+          referralCode,
+          referredBy,
+        });
+        const result: Partial<User> = newUser.toObject();
+        delete result.password;
+        return result;
+      } catch (error) {
+        if (error instanceof mongo.MongoServerError && error.code === 11000) {
+          if (error.keyPattern?.email) {
+            throw new HttpException('User already exists', 400);
+          }
+          if (error.keyPattern?.referralCode && attempt < maxAttempts) {
+            continue;
+          }
+        }
+        throw error;
+      }
+    }
   }
 
   async login(loginDto: { email: string; password: string }, res: Response) {
