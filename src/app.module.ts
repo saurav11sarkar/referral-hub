@@ -11,6 +11,8 @@ import { DashboardModule } from './app/module/dashboard/dashboard.module';
 import { SubscribeModule } from './app/module/subscribe/subscribe.module';
 import { PaymentModule } from './app/module/payment/payment.module';
 import { WebhookModule } from './app/module/webhook/webhook.module';
+import { AdminPermissionModule } from './app/module/admin-permission/admin-permission.module';
+import { TaskModule } from './app/module/task/task.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { WebhookModule } from './app/module/webhook/webhook.module';
     SubscribeModule,
     PaymentModule,
     WebhookModule,
+    AdminPermissionModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],

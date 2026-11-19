@@ -19,7 +19,12 @@ import {
   VerifyEmailDto,
 } from './dto/create-auth.dto';
 import type { Request, Response } from 'express';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import AuthGuard from 'src/app/middlewares/auth.guard';
 
 @Controller('auth')
@@ -29,7 +34,10 @@ export class AuthController {
   @Post('register')
   @ApiQuery({ name: 'ref', required: false, example: 'RH-8F2A91C4D073' })
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() registerDto: CreateAuthDto, @Query('ref') ref: unknown) {
+  async register(
+    @Body() registerDto: CreateAuthDto,
+    @Query('ref') ref: unknown,
+  ) {
     const result = await this.authService.register(registerDto, ref);
 
     return {
