@@ -9,6 +9,7 @@ import { AuthModule } from './app/module/auth/auth.module';
 import { UserModule } from './app/module/user/user.module';
 import { AdminPermissionModule } from './app/module/admin-permission/admin-permission.module';
 import { TaskModule } from './app/module/task/task.module';
+import { VideoModule } from './app/module/video/video.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TaskModule } from './app/module/task/task.module';
     ContactModule,
     AdminPermissionModule,
     TaskModule,
+    VideoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
