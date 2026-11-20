@@ -17,7 +17,7 @@ import { IFilterParams } from 'src/app/helpers/pick';
 import { ClientSession, Connection, Model, Types } from 'mongoose';
 
 const submissionFields =
-  'taskId userId taskTitle reward imageUrl status reviewedBy reviewedAt createdAt updatedAt __v';
+  'taskId userId taskTitle reward imageUrl status note reviewedBy reviewedAt createdAt updatedAt __v';
 
 @Injectable()
 export class TaskSubmissionService {
@@ -31,27 +31,29 @@ export class TaskSubmissionService {
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
-  async availableTasks(params: IFilterParams, options: IOptions) {
+  async availableTasks(
+    params: IFilterParams,
+    options: IOptions,
+    userId: string,
+  ) {
     const { page, skip, limit, sortBy, sortOrder } = paginationHelper(options);
-    const whereConditions = buildWhereConditions(params, ['status']);
-
-    const result = await this.tasks
-      .find({
-        ...whereConditions,
-        status: 'active',
-        archivedAt: { $exists: false },
-        deadlineAt: { $gte: new Date() },
-      })
-      .sort({ [sortBy]: sortOrder })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await this.tasks.countDocuments({
-      ...whereConditions,
+    const submittedTaskIds = await this.submissions.distinct('taskId', {
+      userId,
+    });
+    const whereConditions = buildWhereConditions(params, ['status'], {
+      _id: { $nin: submittedTaskIds },
       status: 'active',
       archivedAt: { $exists: false },
       deadlineAt: { $gte: new Date() },
     });
+
+    const result = await this.tasks
+      .find(whereConditions)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await this.tasks.countDocuments(whereConditions);
 
     return { data: result, meta: { total, page, limit } };
   }
@@ -190,9 +192,73 @@ export class TaskSubmissionService {
     });
   }
 
-  async reject(id: string, adminId: string) {
-    const submission = await this.reviewPending(id, adminId, 'rejected');
+  async reject(id: string, adminId: string, note?: string) {
+    const submission = await this.reviewPending(
+      id,
+      adminId,
+      'rejected',
+      undefined,
+      note,
+    );
     return submission;
+  }
+
+  async deleteSubmission(id: string) {
+    const submission = await this.submissions
+      .findOneAndDelete({ _id: id, status: { $in: ['pending', 'rejected'] } })
+      .select(submissionFields);
+    if (!submission) {
+      throw new NotFoundException('Pending or rejected submission not found');
+    }
+
+    return submission;
+  }
+
+  async resubmit(id: string, userId: string, image: Express.Multer.File) {
+    const user = await this.users.exists({
+      _id: userId,
+      role: 'user',
+      status: 'active',
+    });
+    if (!user) throw new ForbiddenException('Active user account required');
+
+    const filter = { _id: id, userId, status: 'rejected' };
+    const submission = await this.submissions
+      .findOne(filter)
+      .select('taskId reward');
+    if (!submission)
+      throw new NotFoundException('Rejected submission not found');
+
+    const task = await this.tasks
+      .findOne({
+        _id: submission.taskId,
+        status: 'active',
+        archivedAt: { $exists: false },
+        deadlineAt: { $gte: new Date() },
+      })
+      .select('reward');
+    if (!task) throw new NotFoundException('Available task not found');
+
+    const reward = submission.reward ?? task.reward;
+    if (!Number.isFinite(reward) || reward < 0) {
+      throw new BadRequestException('Invalid task reward');
+    }
+
+    const { url } = await fileUpload.uploadToCloudinary(image, 'image');
+    const result = await this.submissions
+      .findOneAndUpdate(
+        filter,
+        {
+          $set: { status: 'pending', imageUrl: url, reward },
+          $unset: { note: '', reviewedBy: '', reviewedAt: '' },
+        },
+        { new: true },
+      )
+      .select(submissionFields);
+    if (!result)
+      throw new ConflictException('Submission is no longer rejected');
+
+    return result;
   }
 
   private async reviewPending(
@@ -200,6 +266,7 @@ export class TaskSubmissionService {
     adminId: string,
     status: 'approved' | 'rejected',
     session?: ClientSession,
+    note?: string,
   ) {
     const submission = await this.submissions
       .findOneAndUpdate(
@@ -207,6 +274,7 @@ export class TaskSubmissionService {
         {
           $set: {
             status,
+            note: note?.trim() || undefined,
             reviewedBy: adminId,
             reviewedAt: new Date(),
           },

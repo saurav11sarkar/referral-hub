@@ -27,6 +27,9 @@ export class TaskSubmission {
   })
   status!: 'pending' | 'approved' | 'rejected';
 
+  @Prop({ trim: true })
+  note?: string;
+
   @Prop({ type: MongoSchema.Types.ObjectId, ref: User.name })
   reviewedBy?: Types.ObjectId;
 

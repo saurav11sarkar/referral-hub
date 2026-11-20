@@ -1,5 +1,7 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -25,6 +27,7 @@ import { fileUpload } from '../../helpers/fileUploder';
 import pick from '../../helpers/pick';
 import AuthGuard from '../../middlewares/auth.guard';
 import { AdminPermissionService } from '../admin-permission/admin-permission.service';
+import { RejectTaskSubmissionDto } from './dto/reject-task-submission.dto';
 import { TaskSubmissionService } from './task-submission.service';
 
 @ApiTags('Task Submissions')
@@ -49,7 +52,11 @@ export class TaskSubmissionController {
   async getAvailableTasks(@Req() req: Request) {
     const params = pick(req.query, ['searchTram', 'status']);
     const options = pick(req.query, ['page', 'limit', 'sortBy', 'sortOrder']);
-    const result = await this.submissions.availableTasks(params, options);
+    const result = await this.submissions.availableTasks(
+      params,
+      options,
+      req.user!.id,
+    );
     return {
       message: 'Available tasks retrieved successfully',
       meta: result.meta,
@@ -167,12 +174,16 @@ export class TaskSubmissionController {
   @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard('admin', 'superadmin'))
   @HttpCode(HttpStatus.OK)
-  async rejectTask(@Param('id') id: string, @Req() req: Request) {
+  async rejectTask(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Body() dto?: RejectTaskSubmissionDto,
+  ) {
     await this.permissions.requirePermission(
       req.user!.id,
       'submissions.manage',
     );
-    const result = await this.submissions.reject(id, req.user!.id);
+    const result = await this.submissions.reject(id, req.user!.id, dto?.note);
     return { message: 'Submission rejected successfully', data: result };
   }
 
@@ -184,5 +195,40 @@ export class TaskSubmissionController {
   async getRewardBalance(@Req() req: Request) {
     const result = await this.submissions.taskRewardBalance(req.user!.id);
     return { message: 'Reward balance retrieved successfully', data: result };
+  }
+
+  @Delete('submissions/:id')
+  @ApiOperation({ summary: 'Delete a pending or rejected submission' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard('admin', 'superadmin'))
+  async deleteSubmission(@Param('id') id: string, @Req() req: Request) {
+    await this.permissions.requirePermission(
+      req.user!.id,
+      'submissions.manage',
+    );
+    const result = await this.submissions.deleteSubmission(id);
+    return { message: 'Submission deleted successfully', data: result };
+  }
+
+  @Patch('submissions/:id/resubmit')
+  @ApiOperation({ summary: 'Resubmit a rejected submission' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard('user'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['image'],
+      properties: { image: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(FileInterceptor('image', fileUpload.uploadConfig))
+  async resubmitTask(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.submissions.resubmit(id, req.user!.id, image);
+    return { message: 'Task resubmitted successfully', data: result };
   }
 }
