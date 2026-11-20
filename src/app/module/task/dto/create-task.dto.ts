@@ -3,6 +3,7 @@ import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsNumber,
+  IsOptional,
   IsString,
   IsUrl,
   Min,
@@ -46,11 +47,13 @@ export class CreateTaskDto {
   @ApiPropertyOptional({ type: 'string' })
   @IsString()
   @IsUrl()
+  @IsOptional()
   videoUrl?: string;
 
   @ApiPropertyOptional({ type: 'string' })
   @IsString()
   @IsUrl()
+  @IsOptional()
   url?: string;
 
   @ApiPropertyOptional({ example: 'active', default: 'active' })
