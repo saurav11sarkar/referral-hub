@@ -16,6 +16,9 @@ import { WalletTransaction } from './entities/wallet-transaction.entity';
 import { IFilterParams } from 'src/app/helpers/pick';
 import { ClientSession, Connection, Model, Types } from 'mongoose';
 
+const submissionFields =
+  'taskId userId taskTitle reward imageUrl status reviewedBy reviewedAt createdAt updatedAt __v';
+
 @Injectable()
 export class TaskSubmissionService {
   constructor(
@@ -102,7 +105,9 @@ export class TaskSubmissionService {
     const [data, total] = await Promise.all([
       this.submissions
         .find(whereConditions)
+        .select(submissionFields)
         .populate('userId', 'fullName')
+        .populate('taskId', 'title reward')
         .sort({ [sortBy]: sortOrder })
         .skip(skip)
         .limit(limit),
@@ -127,12 +132,15 @@ export class TaskSubmissionService {
     const [data, total] = await Promise.all([
       this.submissions
         .find(whereConditions)
+        .select(submissionFields)
         .populate('userId', 'fullName')
+        .populate('taskId', 'title reward')
         .sort({ [sortBy]: sortOrder })
         .skip(skip)
         .limit(limit),
       this.submissions.countDocuments(whereConditions),
     ]);
+
     return {
       data,
       meta: { total, page, limit },
@@ -142,7 +150,9 @@ export class TaskSubmissionService {
   async getSingleSubmission(id: string) {
     const submission = await this.submissions
       .findById(id)
-      .populate('userId', 'fullName');
+      .select(submissionFields)
+      .populate('userId', 'fullName')
+      .populate('taskId', 'title reward');
 
     if (!submission) throw new NotFoundException('Submission not found');
 
@@ -160,7 +170,10 @@ export class TaskSubmissionService {
         session,
       );
 
-      const reward = submission.reward ?? (submission.rewardMinor ?? 0) / 100;
+      const reward = submission.reward;
+      if (reward === undefined) {
+        throw new BadRequestException('Submission reward is missing');
+      }
 
       // Save approval and reward together.
       await this.walletTransactions.create(
@@ -173,8 +186,6 @@ export class TaskSubmissionService {
         ],
         { session },
       );
-      submission.reward = reward;
-      submission.rewardMinor = undefined;
       return submission;
     });
   }
@@ -202,7 +213,7 @@ export class TaskSubmissionService {
         },
         { new: true, session },
       )
-      .select(status === 'approved' ? '+rewardMinor' : '');
+      .select(submissionFields);
     if (!submission) throw new ConflictException('Submission is not pending');
     return submission;
   }

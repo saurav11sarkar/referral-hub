@@ -137,7 +137,7 @@ export class TaskSubmissionController {
     };
   }
 
-  @Get(':id')
+  @Get('submissions/:id')
   @ApiOperation({ summary: 'get single submission' })
   @HttpCode(HttpStatus.OK)
   async getSingleSubmission(@Param('id') id: string) {

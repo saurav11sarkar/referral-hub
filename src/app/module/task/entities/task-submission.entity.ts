@@ -17,21 +17,6 @@ export class TaskSubmission {
   @Prop({ required: true })
   reward?: number;
 
-  @Prop({ select: false })
-  rewardMinor?: number;
-
-  @Prop({ type: Buffer, select: false })
-  proof?: Buffer;
-
-  @Prop({ select: false })
-  proofType?: string;
-
-  @Prop({ select: false })
-  imagePublicId?: string;
-
-  @Prop({ select: false })
-  imageFormat?: string;
-
   @Prop()
   imageUrl?: string;
 
