@@ -17,5 +17,6 @@ import {
   ],
   controllers: [AdminPermissionController],
   providers: [AdminPermissionService],
+  exports: [AdminPermissionService],
 })
 export class AdminPermissionModule {}

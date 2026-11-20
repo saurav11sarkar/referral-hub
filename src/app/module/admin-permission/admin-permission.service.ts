@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { CreateAdminPermissionDto } from './dto/create-admin-permission.dto';
 // import { UpdateAdminPermissionDto } from './dto/update-admin-permission.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -18,11 +22,19 @@ export class AdminPermissionService {
   ) {}
 
   async addPermisionAdmin(
+    actorId: string,
     adminId: string,
     createAdminPermissionDto: CreateAdminPermissionDto,
   ) {
+    const actor = await this.userModel.exists({
+      _id: actorId,
+      role: 'superadmin',
+      status: 'active',
+    });
+    if (!actor) throw new ForbiddenException('Active super admin required');
+
     const admin = await this.userModel.findById(adminId);
-    if (!admin || admin.role === '"admi') {
+    if (!admin || admin.role !== 'admin') {
       throw new BadRequestException('Admin not found or not authorized');
     }
 
@@ -32,5 +44,19 @@ export class AdminPermissionService {
     });
 
     return result;
+  }
+
+  async requirePermission(actorId: string, permission: string) {
+    const actor = await this.userModel.findById(actorId).select('role status');
+    if (actor?.status === 'active' && actor.role === 'superadmin') return;
+
+    if (actor?.status === 'active' && actor.role === 'admin') {
+      const grants = await this.adminPermissionModel
+        .findOne({ adminId: actor._id })
+        .sort({ createdAt: -1, _id: -1 });
+      if (grants?.permissions.includes(permission)) return;
+    }
+
+    throw new ForbiddenException('Permission denied');
   }
 }

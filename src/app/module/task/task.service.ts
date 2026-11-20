@@ -42,12 +42,11 @@ export class TaskService {
   async getAllTask(param: IFilterParams, option: IOptions) {
     const { limit, page, skip, sortBy, sortOrder } = paginationHelper(option);
 
-    const whereConditions = buildWhereConditions(param, [
-      'title',
-      'description',
-      'instructions',
-      'status',
-    ]);
+    const whereConditions = buildWhereConditions(
+      param,
+      ['title', 'description', 'instructions', 'status'],
+      { archivedAt: { $exists: false } },
+    );
 
     const result = await this.TaskModule.find(whereConditions)
       .skip(skip)
@@ -67,7 +66,10 @@ export class TaskService {
   }
 
   async getSingleTask(id: string) {
-    const task = await this.TaskModule.findById(id);
+    const task = await this.TaskModule.findOne({
+      _id: id,
+      archivedAt: { $exists: false },
+    });
     if (!task) throw new NotFoundException('Task not found');
 
     return task;
@@ -93,7 +95,11 @@ export class TaskService {
   }
 
   async deleteTask(id: string) {
-    const task = await this.TaskModule.findByIdAndDelete(id);
+    const task = await this.TaskModule.findOneAndUpdate(
+      { _id: id, archivedAt: { $exists: false } },
+      { $set: { archivedAt: new Date() } },
+      { new: true },
+    );
     if (!task) throw new NotFoundException('Task not found');
 
     return task;

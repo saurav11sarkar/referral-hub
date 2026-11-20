@@ -5,6 +5,7 @@ import {
   Body,
   // Patch,
   Param,
+  Req,
   // Delete,
   UseGuards,
   HttpCode,
@@ -14,6 +15,7 @@ import { AdminPermissionService } from './admin-permission.service';
 import { CreateAdminPermissionDto } from './dto/create-admin-permission.dto';
 // import { UpdateAdminPermissionDto } from './dto/update-admin-permission.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
 import AuthGuard from 'src/app/middlewares/auth.guard';
 
 @ApiTags('admin-permission')
@@ -29,10 +31,12 @@ export class AdminPermissionController {
   @UseGuards(AuthGuard('superadmin'))
   @HttpCode(HttpStatus.CREATED)
   async addAdminPermision(
+    @Req() req: Request,
     @Param('adminId') adminId: string,
     @Body() createAdminPermissionDto: CreateAdminPermissionDto,
   ) {
     const result = await this.adminPermissionService.addPermisionAdmin(
+      req.user!.id,
       adminId,
       createAdminPermissionDto,
     );

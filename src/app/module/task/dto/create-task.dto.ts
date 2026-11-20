@@ -4,6 +4,7 @@ import {
   IsDateString,
   IsNumber,
   IsString,
+  IsUrl,
   Min,
   ValidateIf,
 } from 'class-validator';
@@ -41,6 +42,16 @@ export class CreateTaskDto {
   @ValidateIf((_dto, value) => value !== undefined)
   @IsString()
   image?: string;
+
+  @ApiPropertyOptional({ type: 'string' })
+  @IsString()
+  @IsUrl()
+  videoUrl?: string;
+
+  @ApiPropertyOptional({ type: 'string' })
+  @IsString()
+  @IsUrl()
+  url?: string;
 
   @ApiPropertyOptional({ example: 'active', default: 'active' })
   @ValidateIf((_dto, value) => value !== undefined)

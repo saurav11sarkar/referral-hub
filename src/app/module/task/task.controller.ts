@@ -22,13 +22,17 @@ import type { Request } from 'express';
 import { fileUpload } from '../../helpers/fileUploder';
 import pick from '../../helpers/pick';
 import AuthGuard from '../../middlewares/auth.guard';
+import { AdminPermissionService } from '../admin-permission/admin-permission.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskService } from './task.service';
 
 @Controller('task')
 export class TaskController {
-  constructor(private readonly taskService: TaskService) {}
+  constructor(
+    private readonly taskService: TaskService,
+    private readonly permissions: AdminPermissionService,
+  ) {}
 
   @Post()
   @ApiBearerAuth('access-token')
@@ -41,6 +45,7 @@ export class TaskController {
     @Body() createTaskDto: CreateTaskDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
+    await this.permissions.requirePermission(req.user!.id, 'tasks.manage');
     const result = await this.taskService.createTask(
       req.user!.id,
       createTaskDto,
@@ -65,6 +70,7 @@ export class TaskController {
   })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   async getAllTask(@Req() req: Request) {
+    await this.permissions.requirePermission(req.user!.id, 'tasks.manage');
     const filters = pick(req.query, [
       'searchTerm',
       'title',
@@ -85,7 +91,8 @@ export class TaskController {
   @Get(':id')
   @UseGuards(AuthGuard('admin', 'superadmin'))
   @ApiBearerAuth('access-token')
-  async getSingleTask(@Param('id') id: string) {
+  async getSingleTask(@Param('id') id: string, @Req() req: Request) {
+    await this.permissions.requirePermission(req.user!.id, 'tasks.manage');
     const result = await this.taskService.getSingleTask(id);
     return { message: 'Task retrieved successfully', data: result };
   }
@@ -97,9 +104,11 @@ export class TaskController {
   @UseInterceptors(FileInterceptor('image', fileUpload.uploadConfig))
   async updateTask(
     @Param('id') id: string,
+    @Req() req: Request,
     @Body() updateTaskDto: UpdateTaskDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
+    await this.permissions.requirePermission(req.user!.id, 'tasks.manage');
     const result = await this.taskService.updateTask(id, updateTaskDto, file);
     return { message: 'Task updated successfully', data: result };
   }
@@ -107,8 +116,9 @@ export class TaskController {
   @Delete(':id')
   @UseGuards(AuthGuard('admin', 'superadmin'))
   @ApiBearerAuth('access-token')
-  async deleteTask(@Param('id') id: string) {
+  async deleteTask(@Param('id') id: string, @Req() req: Request) {
+    await this.permissions.requirePermission(req.user!.id, 'tasks.manage');
     const result = await this.taskService.deleteTask(id);
-    return { message: 'Task deleted successfully', data: result };
+    return { message: 'Task archived successfully', data: result };
   }
 }

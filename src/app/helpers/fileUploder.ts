@@ -20,6 +20,7 @@ const uploadConfig = {
 
 const uploadToCloudinary = async (
   file: Express.Multer.File,
+  resourceType: 'auto' | 'image' = 'auto',
 ): Promise<{ url: string; public_id: string }> => {
   if (!file) throw new HttpException('No file provided', 400);
   if (
@@ -34,7 +35,7 @@ const uploadToCloudinary = async (
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: config.cloudinary.folder,
-        resource_type: 'auto',
+        resource_type: resourceType,
         transformation: {
           width: 500,
           height: 500,
