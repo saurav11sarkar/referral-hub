@@ -10,6 +10,7 @@ import { UserModule } from './app/module/user/user.module';
 import { AdminPermissionModule } from './app/module/admin-permission/admin-permission.module';
 import { TaskModule } from './app/module/task/task.module';
 import { VideoModule } from './app/module/video/video.module';
+import { ProductModule } from './app/module/product/product.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { VideoModule } from './app/module/video/video.module';
     AdminPermissionModule,
     TaskModule,
     VideoModule,
+    ProductModule,
   ],
   controllers: [AppController],
   providers: [AppService],
