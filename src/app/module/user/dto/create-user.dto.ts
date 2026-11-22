@@ -39,7 +39,7 @@ export class CreateUserDto {
   @IsString()
   phoneNumber?: string;
 
-  @ApiPropertyOptional({ example: '' })
+  @ApiPropertyOptional({ type: 'string', format: 'binary' })
   @IsOptional()
   @IsString()
   profilePicture?: string;
