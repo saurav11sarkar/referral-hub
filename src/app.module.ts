@@ -10,7 +10,10 @@ import { UserModule } from './app/module/user/user.module';
 import { AdminPermissionModule } from './app/module/admin-permission/admin-permission.module';
 import { TaskModule } from './app/module/task/task.module';
 import { VideoModule } from './app/module/video/video.module';
+<<<<<<< HEAD
 import { ProductModule } from './app/module/product/product.module';
+=======
+>>>>>>> 36cc0ee3a27b949038c99865a5c06d24baa4dc51
 
 @Module({
   imports: [
@@ -22,7 +25,10 @@ import { ProductModule } from './app/module/product/product.module';
     AdminPermissionModule,
     TaskModule,
     VideoModule,
+<<<<<<< HEAD
     ProductModule,
+=======
+>>>>>>> 36cc0ee3a27b949038c99865a5c06d24baa4dc51
   ],
   controllers: [AppController],
   providers: [AppService],
