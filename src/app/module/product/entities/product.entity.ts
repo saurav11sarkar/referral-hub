@@ -21,6 +21,12 @@ export class Product {
   @Prop()
   discountPrice: number;
 
+  @Prop({ default: 0, min: 0 })
+  rewardTokens?: number;
+
+  @Prop({ type: Number, min: 1 })
+  tokenPrice?: number | null;
+
   @Prop()
   catagory: string;
 

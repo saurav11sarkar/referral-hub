@@ -11,6 +11,7 @@ import { AdminPermissionModule } from './app/module/admin-permission/admin-permi
 import { TaskModule } from './app/module/task/task.module';
 import { VideoModule } from './app/module/video/video.module';
 import { ProductModule } from './app/module/product/product.module';
+import { OrderModule } from './app/module/order/order.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ProductModule } from './app/module/product/product.module';
     TaskModule,
     VideoModule,
     ProductModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

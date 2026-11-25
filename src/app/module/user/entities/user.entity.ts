@@ -63,6 +63,9 @@ export class User {
   @Prop({ enum: ['active', 'suspended'], default: 'active' })
   status: string;
 
+  @Prop({ default: 0, min: 0, select: false })
+  tokenBalance?: number;
+
   @Prop()
   verifiedForget: boolean;
 
