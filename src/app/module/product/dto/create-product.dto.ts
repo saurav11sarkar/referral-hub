@@ -30,7 +30,15 @@ export class CreateProductDto {
   )
   @IsNumber()
   @Min(0)
-  price!: number;
+  orginalPrice!: number;
+
+  @ApiProperty({ example: 320 })
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value,
+  )
+  @IsNumber()
+  @Min(0)
+  discountPrice!: number;
 
   @ApiPropertyOptional({
     type: 'array',
